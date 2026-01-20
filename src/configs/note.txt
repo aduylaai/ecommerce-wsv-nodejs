@@ -1,0 +1,2 @@
+Chứa các 
+Khác với .env
