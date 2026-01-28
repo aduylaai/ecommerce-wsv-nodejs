@@ -26,9 +26,9 @@ app.use(compression())
 
 
 //init database
-
-
-
+require('./dbs/init.mongodb')
+const { checkOverload } = require('./helpers/check.connect')
+checkOverload()
 //init routers
 app.get("/", (req,res,next)=>{
     const strCompress = 'hello moi nguoi'
