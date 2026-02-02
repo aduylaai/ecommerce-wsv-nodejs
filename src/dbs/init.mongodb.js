@@ -2,9 +2,10 @@
 
 const mongoose= require('mongoose')
 const {countConnect} = require('../helpers/check.connect')
+const {db : {host,name,port}} = require('../configs/config.mongodb')
+// const connectString = `mongodb://:27017/eCommerceShop` // Ko được khai báo như thế này. Bỏ vào .env 
+const connectString = `mongodb://${host}:${port}/${name}` // KHAI BAO CHUAN
 
-
-const connectString = 'mongodb://localhost:27017/eCommerceShop' // Ko được khai báo như thế này. Bỏ vào .env 
 
 // Singleton, tạo 1 instance để vào 1 database duy nhất.
 class Database {
@@ -13,7 +14,6 @@ class Database {
     }
     
     
-
     //connect:
     connect(type = 'mongodb'){
         if (1===1) { //dev in ra log, prod thì không.
@@ -21,7 +21,12 @@ class Database {
             mongoose.set('debug', {color: true})
         }
         
-        mongoose.connect(connectString).then(_ => {
+        //PoolSize:: Giúp cải thiện hiệu suất và mở rộng của ứng dụng
+        //Mongoose không vượt poolsize, tạo queue để xử lý xong, đợi free connection thì cho sử dựng.
+        //Tăng poolsize thì dựa vào CPUs + memories phù hợp với tài nguyên.
+        mongoose.connect(connectString, {
+            maxPoolSize: 100
+        }).then(_ => {
             console.log("Connect MongoDB success [Singleton]!", countConnect())
         })
         .catch(err => console.log('Error connect!'))

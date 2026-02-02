@@ -18,7 +18,7 @@ const checkOverload = () => {
         const numConnection = mongoose.connections.length;
         const numCores = os.cpus().length;
         const memoryUsage = process.memoryUsage().rss;
-        
+
         // Gắn biến maxConnections để check
         const maxConnections = numCores * 5; //Giả sử mỗi core chịu được 5 connections
         
@@ -32,6 +32,8 @@ const checkOverload = () => {
         }
     }, _SECONDS)
 }
+
+//Có nên đóng kết nối mongoose liên tục không -> Không. Vì có mongoose tự động đóng mở.
 
 
 module.exports={

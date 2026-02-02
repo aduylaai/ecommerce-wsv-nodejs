@@ -1,3 +1,5 @@
+
+require('dotenv').config()
 //Khai báo 1 middleware
 const express = require('express');
 const morgan = require('morgan');
@@ -18,7 +20,6 @@ app.use(morgan("dev")) //-> Trạng thái được tô màu status http (dung ch
 //helmet -> thêm các security cho headers.
 // Ẩn các header đi, không cho biết công nghệ tránh lỗ hổng
 app.use(helmet())
-
 // conpression -> payload :: vận chuyển dữ liệu
 // khi gửi quá nhiều thì tốn băng thông 
 //-> giảm băng thông
@@ -28,7 +29,7 @@ app.use(compression())
 //init database
 require('./dbs/init.mongodb')
 const { checkOverload } = require('./helpers/check.connect')
-checkOverload()
+// checkOverload()
 //init routers
 app.get("/", (req,res,next)=>{
     const strCompress = 'hello moi nguoi'
@@ -39,11 +40,5 @@ app.get("/", (req,res,next)=>{
     })
 })
 
-
 //handling errors
-
 module.exports = app; 
-
-//Những package ko thể thiếu:
-//morgan: in ra các log khi người dùng chạy 1 request
-//
