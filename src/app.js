@@ -24,21 +24,17 @@ app.use(helmet())
 // khi gửi quá nhiều thì tốn băng thông 
 //-> giảm băng thông
 app.use(compression())
+app.use(express.json())
 
 
 //init database
 require('./dbs/init.mongodb')
 const { checkOverload } = require('./helpers/check.connect')
+
 // checkOverload()
 //init routers
-app.get("/", (req,res,next)=>{
-    const strCompress = 'hello moi nguoi'
+app.use('/',require('./routes'))
 
-    return res.status(200).json({
-        message:'Hello Api World!',
-        metadata: strCompress.repeat(1000)
-    })
-})
 
 //handling errors
 module.exports = app; 
