@@ -19,6 +19,8 @@
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.3",
+    "lodash": "^4.17.23",
     "mongoose": "^9.1.5"
   },
   "devDependencies": {
