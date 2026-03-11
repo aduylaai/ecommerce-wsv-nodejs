@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const KeyTokenService = require("./keyToken.services");
 const { createTokenPair } = require("../auth/authUtils");
 const { getInfoData } = require("../utils");
-const { BadRequestError } = require("../core/error.respone");
+const { BadRequestError } = require("../core/error.response");
 
 //Bo vao file const
 const RoleShop = {
