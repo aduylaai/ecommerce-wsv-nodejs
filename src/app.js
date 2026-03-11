@@ -37,6 +37,24 @@ const { checkOverload } = require('./helpers/check.connect')
 //init routers
 app.use('/',require('./routes'))
 
-
 //handling errors
+
+//Handling not found
+app.use((req,res,next)=>{
+    const err = new Error('404 Not Found')
+    err.status = 404
+    next(err)
+})
+
+//Handling common error
+app.use((err,req,res,next)=>{
+    const statusCode = err.status || 500
+    return res.status(statusCode).json({
+        status: 'Error',
+        code: statusCode,
+        message: err.message || "Internal Server Error"
+    })
+})
+
+
 module.exports = app; 

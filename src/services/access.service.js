@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const KeyTokenService = require("./keyToken.services");
 const { createTokenPair } = require("../auth/authUtils");
 const { getInfoData } = require("../utils");
+const { BadRequestError } = require("../core/error.respone");
 
 //Bo vao file const
 const RoleShop = {
@@ -17,15 +18,11 @@ const RoleShop = {
 //Viet bang static => goi function luon
 class AccessService{
     static signUp = async ({name, email, password})=>{
-        try {
             //Step 1: Check email existance
 
             const holderShop = await shopModel.findOne({email}).lean() //lean => tra ve obj js thuan tuy
             if(holderShop){
-                return {
-                    code:'xxxx',
-                    message:'Shop already registered'
-                }
+                throw new BadRequestError('Error:: Shop already registered')
             }
 
             const passwordHash = await bcrypt.hash(password, 10) //salt -> do hash = 10 anh huong den CPU
@@ -35,7 +32,7 @@ class AccessService{
             if(newShop){
                 //C1: Redirect den trang log in -> login -> cap newToken
 
-                //C2: Cap newToken -> auto login
+                //C2: Cap newToken -> auto login n
                 //Step 1: Created privateKey, publicKey 
                 //privateKey cho nguoi dung local, sign token
                 //publicKey thi de verify token.
@@ -65,10 +62,7 @@ class AccessService{
 
                 // If not then return err
                 if(!publicKeyString){
-                    return {
-                        code: 'xxxx',
-                        message: 'PublicKeyString Error'
-                    }
+                    throw new BadRequestError("Error:: Internal Server Error")
                 }
                 
                 const publicKeyObject = crypto.createPublicKey(publicKeyString)
@@ -96,15 +90,7 @@ class AccessService{
                  code:200,
                     metadata:null
             }
-        } catch (error) {
-            return{
-                code :'xxx', // Viet trong document quy dinh cho team
-                message: error.message,
-                status: 'error'
-            }
         }
-    }
-
 }
 
 module.exports = AccessService
