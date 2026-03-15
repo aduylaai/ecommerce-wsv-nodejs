@@ -1,6 +1,9 @@
 'use strict'
 
+const { ForbiddenError } = require("../core/error.response")
+const apikeyModel = require("../models/apikey.model")
 const { findById } = require("../services/apikey.service")
+const crypto = require('crypto')
 
 
 const HEADER = {
@@ -10,6 +13,14 @@ const HEADER = {
 
 const apiKey = async (req, res, next) => {
     try {
+
+
+        // const newApiKey = apikeyModel.create({
+        //     key: crypto.randomBytes(64).toString('hex'), permission: ['0000']
+        // })
+        
+        // console.log(`APIKEY :: `,newApiKey.key);
+
         const key = req.headers[HEADER.API_KEY]?.toString()
         if(!key){
             return res.status(403).json({
@@ -44,11 +55,9 @@ const permission = (permission) => {
         const validPermission = req.objKey.permission.includes(permission)
         if(!validPermission)
         {
-            return res.status(403).json({
-                message: 'Permission Denined'
-            })
+            throw new ForbiddenError("Permission denied");
+            
         }
-
         return next()
     }
 }

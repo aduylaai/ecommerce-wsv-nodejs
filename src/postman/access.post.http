@@ -1,11 +1,12 @@
 ### SIGNUP
 @url_dev=http://localhost:3052/v1/api
-POST {{url_dev}}/shop/signup
+POST {{url_dev}}/shop/login
 Content-Type: application/json
-x-api-key: bd46db94c64bdc698193b324dbba4d8f302e0ca4718abe98876339757d622232988e14fbc202cbedfab2a161e8f8ef68aa82e913792862e4bc291033e7017d47
+x-api-key: f1d7f9ec70ab772c6997169a98528b0b2b4229f8153160472fa39ffe52fc52c1516617035777c43b7eb1182ce23d03cdfa5d96b65bbf8736c2235f8f8a93c0d6
 
 {
-  "name": "Test V10",
-  "email": "shoptest11@gmail.com",
-  "password": "ShopShop1"
+  "name": "Test auth",
+  "email": "shopdev@gmail.com",
+  "password": "123456"
 }
+

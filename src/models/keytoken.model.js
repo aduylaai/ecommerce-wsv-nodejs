@@ -18,9 +18,12 @@ var keyTokenSchema = new Schema({
         type: String,
         required: true,
    },
-   refreshToken:{
+   refreshTokenUsed:{
     type: Array, default: []
-   } //Detect cac token da su dung roi
+   },
+    refreshToken:{
+        type:String
+   }
 },
 {
     collection: COLLECTION_NAME,

@@ -5,7 +5,8 @@ const crypto = require('crypto');
 const KeyTokenService = require("./keyToken.services");
 const { createTokenPair } = require("../auth/authUtils");
 const { getInfoData } = require("../utils");
-const { BadRequestError } = require("../core/error.response");
+const { BadRequestError,AuthFailureError } = require("../core/error.response");
+const { findByEmailAsync } = require("./shop.services");
 
 //Bo vao file const
 const RoleShop = {
@@ -17,6 +18,63 @@ const RoleShop = {
 
 //Viet bang static => goi function luon
 class AccessService{
+    
+    /*
+        LOGIN FLOW:
+    1. Check email.
+    2. Match password.
+    3. Create AT and RT.
+    4. Create tokens.
+    5. Return login data
+    */
+    static login = async ({email, password, refreshToken = null})=>{
+
+        //1.
+        const foundShop = await findByEmailAsync(email)
+        if (!foundShop){
+            throw new BadRequestError('This shop is not Registered!') 
+        }
+
+        //2. 
+        // console.log('[DEBUG] foundShop::',foundShop);
+        
+        // console.log('[DEBUG] passwordInput::',password);
+        // console.log('[DEBUG] hashPassword::',foundShop.password);
+
+        const isMatchPassword = await bcrypt.compare(password, foundShop.password)
+        if(!isMatchPassword) throw new AuthFailureError('Authentication Error')
+        
+
+        //3.
+        const {privateKey, publicKey } = crypto.generateKeyPairSync('rsa',{
+                    modulusLength:4096,
+                    publicKeyEncoding: {
+                        type: 'pkcs1',
+                        format: 'pem'
+                    },
+                    privateKeyEncoding: {
+                        type: 'pkcs1',
+                        format: 'pem'
+                    }
+                }) 
+        //4.
+        const publicKeyObject = crypto.createPublicKey(publicKey.toString())
+        console.log(`PublicKey Obj:: `, publicKeyObject);
+
+        const {_id: userID} = foundShop //destructing for clean code
+        console.log(`[DEBUG] userID:: `,userID);
+        const tokens = await createTokenPair({userID: userID,email}, publicKeyObject, privateKey)
+        
+        await KeyTokenService.createKeyToken({userID,publicKey, refreshToken: tokens.refreshToken})
+
+        return {
+            shop: getInfoData({fields: ['_id','name','email'],object: foundShop}),
+            tokens
+        }
+}
+
+
+
     static signUp = async ({name, email, password})=>{
             //Step 1: Check email existance
 
@@ -24,7 +82,7 @@ class AccessService{
             if(holderShop){
                 throw new BadRequestError('Error:: Shop already registered')
             }
-
+ 
             const passwordHash = await bcrypt.hash(password, 10) //salt -> do hash = 10 anh huong den CPU
             const newShop = await shopModel.create({name,email,password: passwordHash,roles: [RoleShop.SHOP]})
             
@@ -53,19 +111,24 @@ class AccessService{
                
 
                 // console.log({privateKey,publicKey}); //save vao collection keyStore
+                console.log('privateKey:: ', privateKey);
 
                 //Step 2: Save publicKey into Server Database
-                const publicKeyString = await KeyTokenService.createKeyToken({
+                const newKeyToken = await KeyTokenService.createKeyToken({
                     userID: newShop._id,
-                    publicKey
+                    publicKey,
+                    refreshToken: null
                 })
 
                 // If not then return err
+                const publicKeyString = newKeyToken.publicKey
                 if(!publicKeyString){
                     throw new BadRequestError("Error:: Internal Server Error")
                 }
                 
-                const publicKeyObject = crypto.createPublicKey(publicKeyString)
+                console.log(`[DEBUG] publicKeyString:: `, publicKeyString);
+
+                const publicKeyObject = crypto.createPublicKey(publicKey)
                 console.log(`PublicKey Obj:: `, publicKeyObject);
                
                 //Step 3: Create token pair

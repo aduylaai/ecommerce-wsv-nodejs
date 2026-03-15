@@ -1,6 +1,6 @@
 'use strict'
 
-const httpCodes = require('./httpCodes/httpCode')
+const httpCodes = require('../utils/httpCodes/httpCode')
 
 
 class ErrorRespone extends Error {
@@ -23,8 +23,22 @@ class BadRequestError extends ErrorRespone{
     }
 }
 
+class ForbiddenError extends ErrorRespone{
+    constructor(message = httpCodes.ReasonPhrases.FORBIDDEN , statusCode = httpCodes.StatusCodes.FORBIDDEN){
+        super(message,statusCode)
+    }
+}
+
+class AuthFailureError extends ErrorRespone{
+    constructor(message = httpCodes.ReasonPhrases.UNAUTHORIZED , statusCode = httpCodes.StatusCodes.UNAUTHORIZED){
+        super(message,statusCode)
+    }
+}
+
 
 module.exports = {
     ConflictResponeError,
-    BadRequestError
+    BadRequestError,
+    ForbiddenError,
+    AuthFailureError
 }
