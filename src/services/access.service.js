@@ -3,10 +3,12 @@ const shopModel = require("../models/shop.model")
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const KeyTokenService = require("./keyToken.services");
-const { createTokenPair } = require("../auth/authUtils");
+const { createTokenPair, verifyJWT } = require("../auth/authUtils");
 const { getInfoData } = require("../utils");
-const { BadRequestError,AuthFailureError } = require("../core/error.response");
+const { BadRequestError,AuthFailureError, ForbiddenError } = require("../core/error.response");
 const { findByEmailAsync } = require("./shop.services");
+const keytokenModel = require("../models/keytoken.model");
+const { token } = require("morgan");
 
 //Bo vao file const
 const RoleShop = {
@@ -30,7 +32,7 @@ class AccessService{
     static login = async ({email, password, refreshToken = null})=>{
 
         //1.
-        const foundShop = await findByEmailAsync(email)
+        const foundShop = await findByEmailAsync({email})
         if (!foundShop){
             throw new BadRequestError('This shop is not Registered!') 
         }
@@ -159,13 +161,68 @@ class AccessService{
 
         //Logout 
 
-        static logout = async (keyStore) => {
+    static logout = async (keyStore) => {
             const delKey = await KeyTokenService.removeById(keyStore._id)
             // console.log({delKey});
             return delKey
         }
 
+    static handleRefreshToken = async ({refreshToken}) =>{
+        //Check used token
+        const foundToken = await KeyTokenService.findByRefreshTokenUsed(refreshToken);
+        if (foundToken) {
+            const {userID, email} = verifyJWT(refreshToken, foundToken.publicKey)
+            console.log(userID,email);
+            // Xy ly sau
+            await KeyTokenService.deleteKeyByID(userID)
+            throw new ForbiddenError('Something wrong, please re-login')
+        }
 
+        // Not found
+        const holderToken = await KeyTokenService.findByRefreshToken(refreshToken)
+        if (!holderToken) {
+            throw new AuthFailureError('Authentication failed!! Please re-login')
+        }
+
+        const { email} = await verifyJWT(refreshToken, holderToken.publicKey)
+        const foundShop = await findByEmailAsync({email})
+        if (!foundShop) throw new AuthFailureError('Authentication failed! Please re-login')
+        
+        const {privateKey, publicKey } = crypto.generateKeyPairSync('rsa',{
+                    modulusLength:4096,
+                    publicKeyEncoding: {
+                        type: 'pkcs1',
+                        format: 'pem'
+                    },
+                    privateKeyEncoding: {
+                        type: 'pkcs1',
+                        format: 'pem'
+                    }
+                }) 
+                
+        const publicKeyObject = crypto.createPublicKey(publicKey.toString())
+        console.log(`PublicKey Obj:: `, publicKeyObject);
+        
+        const {_id:userID, _email: holderEmail} = foundShop
+        console.log(`[DEBUG] userID:: `,userID);
+        const tokens = await createTokenPair({userID: userID,holderEmail}, publicKeyObject, privateKey)
+        
+        holderToken.updateOne(
+            {
+                $set: {
+                    refreshToken: tokens.refreshToken
+                },
+                $addToSet:{
+                    refreshTokenUsed: refreshToken // Tokens which were used to get new AT RT
+                }
+            }
+        )
+        
+        return {
+            shop: getInfoData({fields: ['_id','name','email'],object: foundShop}),
+            tokens
+        }
+    }
 }
 
 module.exports = AccessService

@@ -2,7 +2,6 @@
 
 const { publicDecrypt } = require("crypto")
 const keytokenModel = require("../models/keytoken.model")
-const shopModel = require("../models/shop.model")
 const {Types} = require('mongoose')
 
 class KeyTokenService{
@@ -27,6 +26,20 @@ class KeyTokenService{
     static removeById = async (id)=>{
         return await keytokenModel.deleteOne({_id:id})
     }
+
+    static findByRefreshTokenUsed = async (refreshToken)=>{
+        return await keytokenModel.findOne({refreshTokenUsed:refreshToken}).lean()
+    }
+
+    static findByRefreshToken = async (refreshToken)=>{
+        return await keytokenModel.findOne({refreshToken:refreshToken})
+    }
+
+    static deleteKeyByID = async (userID) =>{
+        return await keytokenModel.findOneAndDelete({user: userID})
+    }
+    
+    
 }
 
 module.exports = KeyTokenService
