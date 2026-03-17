@@ -3,18 +3,11 @@
 const { publicDecrypt } = require("crypto")
 const keytokenModel = require("../models/keytoken.model")
 const shopModel = require("../models/shop.model")
+const {Types} = require('mongoose')
 
 class KeyTokenService{
     static createKeyToken = async ({userID,publicKey, refreshToken})=>{
             
-        // Chi tao moi, ko update, ko toi uu
-        // const publicKeyString = publicKey.toString()
-            // const tokens = await keytokenModel.create({
-            //     user: userID,
-            //     publicKey: publicKeyString
-            // })
-
-            // return tokens ? tokens.publicKey : null
 
         //New way
         console.log('[DEBUG] userID:: ', userID);
@@ -25,6 +18,14 @@ class KeyTokenService{
         const tokens = await keytokenModel.findOneAndUpdate(filter,update, options)
 
         return tokens
+    }
+
+    static findByUserId = async (userID) => {
+        return await keytokenModel.findOne({ user: new Types.ObjectId(userID)}).lean()
+    }
+
+    static removeById = async (id)=>{
+        return await keytokenModel.deleteOne({_id:id})
     }
 }
 

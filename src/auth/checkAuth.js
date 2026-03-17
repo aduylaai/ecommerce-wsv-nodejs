@@ -14,7 +14,7 @@ const HEADER = {
 const apiKey = async (req, res, next) => {
     try {
 
-
+        //Code newKey
         // const newApiKey = apikeyModel.create({
         //     key: crypto.randomBytes(64).toString('hex'), permission: ['0000']
         // })
@@ -56,7 +56,6 @@ const permission = (permission) => {
         if(!validPermission)
         {
             throw new ForbiddenError("Permission denied");
-            
         }
         return next()
     }
