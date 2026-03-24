@@ -28,10 +28,22 @@ class AccessController
     }
 
     handleRefreshToken = async (req,res,next)=>{
+        // new SuccessResponse({
+        //     message: 'Get token Sucess!',
+        //     metadata: await AccessService.handleRefreshToken(req.body)
+        // }).send(res)
+
+
+        //V2 fixed no need AT to verify for this route
         new SuccessResponse({
             message: 'Get token Sucess!',
-            metadata: await AccessService.handleRefreshToken(req.body)
+            metadata: await AccessService.handleRefreshTokenV2({
+                refreshToken: req.refreshToken,
+                user: req.user,
+                keyStore: req.keyStore
+            })
         }).send(res)
+        
     } 
 
 }

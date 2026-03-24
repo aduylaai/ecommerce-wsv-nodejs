@@ -28,7 +28,10 @@ class AccessService{
     3. Create AT and RT.
     4. Create tokens.
     5. Return login data
+    //TODO: ADD LOGIC SAVE RT used if user send rt
+
     */
+
     static login = async ({email, password, refreshToken = null})=>{
 
         //1.
@@ -167,27 +170,83 @@ class AccessService{
             return delKey
         }
 
-    static handleRefreshToken = async ({refreshToken}) =>{
+    // static handleRefreshToken = async ({refreshToken}) =>{
+    //     //Check used token
+    //     const foundToken = await KeyTokenService.findByRefreshTokenUsed(refreshToken);
+    //     if (foundToken) {
+    //         const {userID, email} = verifyJWT(refreshToken, foundToken.publicKey)
+    //         console.log(userID,email);
+    //         // Xy ly sau
+    //         await KeyTokenService.deleteKeyByID(userID)
+    //         throw new ForbiddenError('Something wrong, please re-login')
+    //     }
+
+    //     // Not found
+    //     const holderToken = await KeyTokenService.findByRefreshToken(refreshToken)
+    //     if (!holderToken) {
+    //         throw new AuthFailureError('Authentication failed!! Please re-login')
+    //     }
+
+    //     const { email} = await verifyJWT(refreshToken, holderToken.publicKey)
+    //     const foundShop = await findByEmailAsync({email})
+    //     if (!foundShop) throw new AuthFailureError('Authentication failed! Please re-login')
+        
+    //     const {privateKey, publicKey } = crypto.generateKeyPairSync('rsa',{
+    //                 modulusLength:4096,
+    //                 publicKeyEncoding: {
+    //                     type: 'pkcs1',
+    //                     format: 'pem'
+    //                 },
+    //                 privateKeyEncoding: {
+    //                     type: 'pkcs1',
+    //                     format: 'pem'
+    //                 }
+    //             }) 
+                
+    //     const publicKeyObject = crypto.createPublicKey(publicKey.toString())
+    //     console.log(`PublicKey Obj:: `, publicKeyObject);
+        
+    //     const {_id:userID, _email: holderEmail} = foundShop
+    //     console.log(`[DEBUG] userID:: `,userID);
+    //     const tokens = await createTokenPair({userID: userID,holderEmail}, publicKeyObject, privateKey)
+        
+    //     holderToken.updateOne(
+    //         {
+    //             $set: {
+    //                 refreshToken: tokens.refreshToken
+    //             },
+    //             $addToSet:{
+    //                 refreshTokenUsed: refreshToken // Tokens which were used to get new AT RT
+    //             }
+    //         }
+    //     )
+        
+    //     return {
+    //         shop: getInfoData({fields: ['_id','name','email'],object: foundShop}),
+    //         tokens
+    //     }
+    // }
+
+    //V2 handleRefreshToken
+
+    static handleRefreshTokenV2 = async ({refreshToken, keyStore, user}) =>{
         //Check used token
-        const foundToken = await KeyTokenService.findByRefreshTokenUsed(refreshToken);
-        if (foundToken) {
-            const {userID, email} = verifyJWT(refreshToken, foundToken.publicKey)
-            console.log(userID,email);
-            // Xy ly sau
+        
+        const {userID,email} = user
+        console.log(userID,email);
+        
+        if (keyStore.refreshTokenUsed.includes(refreshToken)) {
             await KeyTokenService.deleteKeyByID(userID)
             throw new ForbiddenError('Something wrong, please re-login')
         }
-
-        // Not found
-        const holderToken = await KeyTokenService.findByRefreshToken(refreshToken)
-        if (!holderToken) {
-            throw new AuthFailureError('Authentication failed!! Please re-login')
+        
+        if (keyStore.refreshToken !== refreshToken) {
+            throw new AuthFailureError('This shop is not Registered')
         }
 
-        const { email} = await verifyJWT(refreshToken, holderToken.publicKey)
         const foundShop = await findByEmailAsync({email})
         if (!foundShop) throw new AuthFailureError('Authentication failed! Please re-login')
-        
+
         const {privateKey, publicKey } = crypto.generateKeyPairSync('rsa',{
                     modulusLength:4096,
                     publicKeyEncoding: {
@@ -203,14 +262,14 @@ class AccessService{
         const publicKeyObject = crypto.createPublicKey(publicKey.toString())
         console.log(`PublicKey Obj:: `, publicKeyObject);
         
-        const {_id:userID, _email: holderEmail} = foundShop
-        console.log(`[DEBUG] userID:: `,userID);
-        const tokens = await createTokenPair({userID: userID,holderEmail}, publicKeyObject, privateKey)
         
-        holderToken.updateOne(
+        const tokens = await createTokenPair({userID: userID,email}, publicKeyObject, privateKey)
+        
+        await keyStore.updateOne(
             {
                 $set: {
-                    refreshToken: tokens.refreshToken
+                    refreshToken: tokens.refreshToken,
+                    publicKey: publicKey.toString()
                 },
                 $addToSet:{
                     refreshTokenUsed: refreshToken // Tokens which were used to get new AT RT
@@ -219,7 +278,7 @@ class AccessService{
         )
         
         return {
-            shop: getInfoData({fields: ['_id','name','email'],object: foundShop}),
+            user,
             tokens
         }
     }

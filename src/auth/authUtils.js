@@ -9,7 +9,8 @@ const { findByUserId } = require('../services/keyToken.services')
 const HEADER = {
     API_KEY : 'x-api-key',
     CLIENT_ID : 'x-client-id',
-    AUTHORIZATION : 'authorization'
+    AUTHORIZATION : 'authorization',
+    REFRESH_TOKEN: 'x-rtoken-id'
 }
 
 const createTokenPair = async (payload,publicKey, privateKey) => {
@@ -50,7 +51,7 @@ const createTokenPair = async (payload,publicKey, privateKey) => {
 
 
 
-const authentication = asyncHandler(async (req,res,next) => {
+const authenticationV2 = asyncHandler(async (req,res,next) => {
         /*
         This function to check authentication before any action like logout, ...
             1. Check userID missing?
@@ -69,12 +70,34 @@ const authentication = asyncHandler(async (req,res,next) => {
         const keyStore = await findByUserId(userID)
         if (!keyStore) throw new NotFoundError('Key store not found')
         
-        //Verify Token
+        //Verify Tokens
+        //RT
+        if(req.headers[HEADER.REFRESH_TOKEN]) {
+            const refreshToken = req.headers[HEADER.REFRESH_TOKEN]
+        try {
+            console.log('RT processing');
+
+            const decodeUser = JWT.verify(refreshToken, keyStore.publicKey)
+            console.log('RT OK');
+            if (userID !== decodeUser.userID) throw new AuthFailureError('Invalid userID')
+            req.keyStore = keyStore
+            req.refreshToken = refreshToken
+            req.user = decodeUser //userID + email
+            return next()
+        } catch (error) {
+            throw error
+        }
+        }
+
+        //AT
         const accessToken = req.headers[HEADER.AUTHORIZATION]
         if (!accessToken) throw new AuthFailureError('Invalid request')
         
         try {
+            console.log('AT processing');
+            
             const decodeUser = JWT.verify(accessToken, keyStore.publicKey)
+            console.log('AT OK');
             if (userID !== decodeUser.userID) throw new AuthFailureError('Invalid userID')
             req.keyStore = keyStore
             req.user = decodeUser //userID + email
@@ -92,6 +115,6 @@ const verifyJWT = async (token, key)=>{
 
 module.exports= {
     createTokenPair,
-    authentication,
+    authenticationV2,
     verifyJWT
 }
